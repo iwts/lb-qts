@@ -45,6 +45,26 @@
 
 ## 编排
 
+### 阶段 0：运行状态初始化
+
+1. 为每次完整市场分析创建运行清单：
+```bash
+.venv/bin/python scripts/pipeline_state.py create --symbols <comma_symbols> --run-id <yyyy-mm-dd_HHMMSS>
+```
+2. 清单路径固定为 `data/_runs/<run_id>/run_manifest.json`。
+3. 若用户要求续跑或存在未完成 run，优先读取该 manifest，只补跑 `failed/degraded/pending` 阶段；已 `ok` 且产物仍存在的阶段不得重复生成。
+4. 每个 worker 完成后，将其 JSON 结果保存到 `data/_runs/<run_id>/worker_results/<symbol>_<phase>.json`（如可用），先执行：
+```bash
+.venv/bin/python scripts/validate_worker_result.py data/_runs/<run_id>/worker_results/<symbol>_<phase>.json
+```
+5. 校验通过后再更新 manifest：
+```bash
+.venv/bin/python scripts/pipeline_state.py update \
+  --manifest data/_runs/<run_id>/run_manifest.json \
+  --symbol <symbol> --phase <phase> --status <ok|degraded|failed> \
+  --output-file <artifact_path>
+```
+
 ### 阶段一：数据准备
 
 1. 按市场分组并行调度 Data Agent，每实例最多 4 标的。

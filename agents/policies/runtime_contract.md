@@ -21,6 +21,9 @@
 4. 当基础流程与 `learned_rules` 冲突时，以 `learned_rules` 为准。
 5. 若主任务定义包含阶段二/三产物，则在这些产物未落盘前，不得把任务视为完成。
 6. “口头总结”“终端输出”“数据已刷新”都不能替代必需的 Markdown 产物。
+7. 新的批量运行必须创建 `data/_runs/<run_id>/run_manifest.json`；每个阶段完成后用结构化结果更新 manifest，失败重跑时优先读取 manifest 只补跑失败/缺失阶段。
+8. Worker 返回 JSON 应先通过 `scripts/validate_worker_result.py` 校验，再进入下一阶段；校验失败时当前阶段至少 `degraded`，关键产物缺失时 `failed`。
+9. Execution 阶段若产出结构化 execution summary，应调用 `scripts/record_prediction.py` 追加 `data/performance/predictions.csv`，供 Review Agent 做 N+1/N+5/N+20 后验统计。
 
 ## 交易员质量门禁
 

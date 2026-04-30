@@ -84,11 +84,16 @@
 
 逐条列出本次触发的 `learned_rules` 编号、约束、对执行参数的影响（例如："触发 1.4 → 本次禁止做空，仅保留做多主计划与观望备选"）。
 
-### G. 写入与同步
+### G. 写入、结构化记录与同步
 
 1. 落盘 `report/<symbol>/report_<yyyy_mm_dd>_<seq>.md`。
 2. 本地报告存在性与非空校验。
-3. 若存在 `.config/feishu_sync_config.json`：
+3. 若已形成结构化执行摘要 JSON（建议字段：`metrics.direction/rating/regime/rules_applied_ids`、`plans[]`、`output_files`、`source_files.deduction`），执行：
+```bash
+.venv/bin/python scripts/record_prediction.py <execution_summary.json>
+```
+将核心预测追加到 `data/performance/predictions.csv`，供后续 Review Agent 自动评估。
+4. 若存在 `.config/feishu_sync_config.json`：
 
 ```bash
 bash scripts/sync_feishu_docs.sh \
@@ -98,9 +103,9 @@ bash scripts/sync_feishu_docs.sh \
   --fundamental deduction/<symbol>/fundamental_analysis_<yyyy_mm_dd>_<seq>.md
 ```
 
-4. 读取脚本 JSON，填充 `feishu_report` / `feishu_deduction` / `feishu_fundamental` 三个字段。
-5. 同步失败 → `degraded` + warning；不得直接跳过。
-6. 错误处理：
+5. 读取脚本 JSON，填充 `feishu_report` / `feishu_deduction` / `feishu_fundamental` 三个字段。
+6. 同步失败 → `degraded` + warning；不得直接跳过。
+7. 错误处理：
    - 一般错误至少重试 2 次
    - MCP 超长失败可截断至 8000 字再重试
    - 单子项失败不阻塞其他子项
