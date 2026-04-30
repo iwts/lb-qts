@@ -1,0 +1,20 @@
+{
+  "_comment": "本文件仅保留结构示例；真实本地配置放在 .config/feishu_sync_config.json",
+  "parent": {
+    "wiki_url": "<local_feishu_wiki_url>",
+    "space_id": "<local_feishu_space_id>",
+    "node_token": "<local_feishu_parent_node_token>",
+    "title": "lb-qts"
+  },
+  "layout": {
+    "symbol_page_title_template": "{symbol}",
+    "report_page_title": "report",
+    "deduction_page_title": "deduction",
+    "fundamental_page_title": "fundamental_analysis"
+  },
+  "sync_mode": {
+    "create_missing_page": true,
+    "update_mode": "overwrite",
+    "dedup_by_title": true
+  }
+}

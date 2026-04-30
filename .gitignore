@@ -1,0 +1,56 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Python virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Python build / packaging artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Test / coverage / type-check caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local project configuration: paths, internal links, wiki/page tokens, personal settings
+.config/
+*.local.json
+agents/feishu_sync_config.local.json
+
+# Local tools
+.local-tools/
+
+# Runtime / temporary artifacts
+tmp/
+data/
+deduction/
+chat-report/
+report/
+task/
+
+# Logs
+*.log
+logs/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE / editor
+.idea/
+.vscode/
+.codex/
+*.swp
+*.swo
