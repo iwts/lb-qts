@@ -95,9 +95,6 @@ class WorkerResultValidationTests(unittest.TestCase):
                     "plans_passed_risk_check": 2,
                     "plans_total": 2,
                     "rules_applied_count": 1,
-                    "feishu_report": "ok",
-                    "feishu_deduction": "ok",
-                    "feishu_fundamental": "ok",
                 },
                 "warnings": [],
             }
@@ -196,9 +193,15 @@ class BaselineCollectionTests(unittest.TestCase):
             self.assertTrue(metrics_path.exists())
             self.assertEqual(summary["results"][0]["symbol"], symbol)
             self.assertEqual(summary["results"][0]["final_report"], "report/AAPL.US/report_2026_05_01_01.md")
+            self.assertEqual(summary["results"][0]["stage_status"]["reasoning"], "ok")
+            self.assertIn("duration_seconds", summary)
 
             metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
             self.assertEqual(metrics["artifacts"]["deduction_report"]["line_count"], 1)
+            self.assertEqual(metrics["inferred_stage_status"]["execution"], "ok")
+            self.assertEqual(metrics["report_length"]["line_count"], 1)
+            self.assertEqual(metrics["data_freshness"]["periods"]["1h"]["latest"], "2026-05-01")
+            self.assertNotEqual(metrics["data_freshness"]["periods"]["1h"]["status"], "MISSING")
             self.assertIn(metrics["status"], {"ok", "degraded"})
 
     def test_collect_baseline_marks_missing_key_artifact_failed(self):

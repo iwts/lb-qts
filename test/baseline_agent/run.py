@@ -14,7 +14,7 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python"
-DEFAULT_SYMBOLS = ["NVDA.US", "0700.HK", "600900.SH", "600036.SH"]
+DEFAULT_SYMBOLS = ["NVDA.US", "0700.HK", "600900.SH"]
 PERIODS = ["1h", "1d", "1w"]
 
 

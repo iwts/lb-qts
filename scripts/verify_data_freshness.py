@@ -173,8 +173,11 @@ def _expected_latest_date(symbol: str, period: str, now_utc: datetime) -> date |
     return current_date
 
 
-def check_symbol(symbol: str, max_stale_override: float | None = None) -> dict:
-    data_dir = symbol_data_dir(symbol)
+def check_symbol(symbol: str, max_stale_override: float | None = None, project_root: str | os.PathLike | None = None) -> dict:
+    if project_root is None:
+        data_dir = symbol_data_dir(symbol)
+    else:
+        data_dir = os.path.join(os.fspath(project_root), "data", symbol)
     now = datetime.now(timezone.utc)
     results = {}
     critical_pass = True

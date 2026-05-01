@@ -37,7 +37,7 @@ docs/agent-modernization-migration-workflow.md
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
   --phase <phase-number> \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label <base-label> \
   --strict
 ```

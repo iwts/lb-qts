@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,7 @@ from typing import Any
 from verify_data_freshness import check_symbol
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SYMBOLS = ["NVDA.US", "0700.HK", "600900.SH", "600036.SH"]
+DEFAULT_SYMBOLS = ["NVDA.US", "0700.HK", "600900.SH"]
 PERIOD_THRESHOLDS_HOURS = {"1h": 4, "1d": 24, "1w": 192}
 DATA_FILES = {
     "1h": "1h_k.csv",
@@ -56,21 +57,26 @@ def collect_baseline(
     run_date: str,
     project_root: Path | str = PROJECT_ROOT,
 ) -> dict[str, Any]:
+    started = time.monotonic()
     root = Path(project_root)
     baseline_dir = root / "data" / "_baseline" / run_date
     baseline_dir.mkdir(parents=True, exist_ok=True)
 
     results = []
+    status_counts = {"ok": 0, "degraded": 0, "failed": 0}
     for symbol in symbols:
         metrics = collect_symbol_metrics(root, symbol)
+        status_counts[metrics["status"]] = status_counts.get(metrics["status"], 0) + 1
         write_json(baseline_dir / f"{symbol}_baseline_metrics.json", metrics)
         results.append(
             {
                 "symbol": symbol,
                 "status": metrics["status"],
+                "stage_status": metrics["inferred_stage_status"],
                 "fundamental_report": metrics["artifacts"]["fundamental_report"]["path"],
                 "deduction_report": metrics["artifacts"]["deduction_report"]["path"],
                 "final_report": metrics["artifacts"]["final_report"]["path"],
+                "report_length": metrics["report_length"],
                 "warnings": metrics["warnings"],
                 "metrics_file": relpath(baseline_dir / f"{symbol}_baseline_metrics.json", root),
             }
@@ -81,6 +87,8 @@ def collect_baseline(
         "generated_at": datetime.now().astimezone().isoformat(timespec="seconds"),
         "symbols": symbols,
         "results": results,
+        "status_counts": status_counts,
+        "duration_seconds": round(time.monotonic() - started, 2),
         "quality_floor": {
             "required_artifacts": [
                 "deduction/<symbol>/fundamental_analysis_*.md",
@@ -96,6 +104,7 @@ def collect_baseline(
 
 
 def collect_symbol_metrics(root: Path, symbol: str) -> dict[str, Any]:
+    started = time.monotonic()
     artifacts = {
         name: file_snapshot(latest_match(root, pattern.format(symbol=symbol)), root)
         for name, pattern in KEY_ARTIFACT_PATTERNS.items()
@@ -104,6 +113,11 @@ def collect_symbol_metrics(root: Path, symbol: str) -> dict[str, Any]:
     freshness = collect_data_freshness(root, symbol)
     latest_manifest = find_latest_run_manifest(root, symbol)
     worker_results = collect_worker_results(root, symbol)
+    inferred_stage_status = infer_stage_status(artifacts, data_files, freshness)
+    report_length = {
+        "line_count": artifacts["final_report"]["line_count"],
+        "size_bytes": artifacts["final_report"]["size_bytes"],
+    }
 
     warnings = build_warnings(artifacts, data_files, freshness)
     status = "ok"
@@ -120,7 +134,10 @@ def collect_symbol_metrics(root: Path, symbol: str) -> dict[str, Any]:
         "data_files": data_files,
         "data_freshness": freshness,
         "latest_pipeline_manifest": latest_manifest,
+        "inferred_stage_status": inferred_stage_status,
         "worker_results": worker_results,
+        "report_length": report_length,
+        "duration_seconds": round(time.monotonic() - started, 2),
         "warnings": warnings,
     }
 
@@ -134,7 +151,7 @@ def collect_data_files(root: Path, symbol: str) -> dict[str, dict[str, Any]]:
 
 
 def collect_data_freshness(root: Path, symbol: str) -> dict[str, Any]:
-    gate = check_symbol(symbol)
+    gate = check_symbol(symbol, project_root=root)
     return {
         "critical_pass": gate["critical_pass"],
         "periods": gate["periods"],
@@ -221,6 +238,29 @@ def collect_worker_results(root: Path, symbol: str) -> dict[str, Any]:
     for result in latest_by_phase.values():
         result.pop("_mtime", None)
     return latest_by_phase
+
+
+def infer_stage_status(
+    artifacts: dict[str, dict[str, Any]],
+    data_files: dict[str, dict[str, Any]],
+    freshness: dict[str, Any],
+) -> dict[str, str]:
+    data_missing = any(not data_files[name]["exists"] for name in DATA_FILES.values())
+    if data_missing:
+        data_status = "failed"
+    elif freshness["critical_pass"]:
+        data_status = "ok"
+    else:
+        data_status = "degraded"
+
+    strategy_inputs = ["signals_summary.json", "llm_context.md", "factor_scores.json"]
+    return {
+        "data": data_status,
+        "fundamental": "ok" if artifacts["fundamental_report"]["exists"] else "failed",
+        "strategy": "ok" if all(data_files[name]["exists"] for name in strategy_inputs) else "degraded",
+        "reasoning": "ok" if artifacts["deduction_report"]["exists"] else "failed",
+        "execution": "ok" if artifacts["final_report"]["exists"] else "failed",
+    }
 
 
 def build_warnings(

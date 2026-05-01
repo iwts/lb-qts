@@ -55,7 +55,6 @@ baseline 是当前系统行为的结构化快照。它不会重新跑完整分�
 NVDA.US
 0700.HK
 600900.SH
-600036.SH
 ```
 
 ## Baseline 状态
@@ -79,14 +78,14 @@ NVDA.US
 采集指定标的：
 
 ```bash
-.venv/bin/python scripts/collect_baseline.py --symbols NVDA.US,0700.HK,600900.SH,600036.SH
+.venv/bin/python scripts/collect_baseline.py --symbols NVDA.US,0700.HK,600900.SH
 ```
 
 给基线指定标签。建议在重构前后使用明确标签，而不是只用日期：
 
 ```bash
 .venv/bin/python scripts/collect_baseline.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --run-date phase0-before
 ```
 
@@ -111,7 +110,7 @@ data/_baseline/<label>/<symbol>_baseline_metrics.json
 
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase0-before \
   --candidate-label phase1-after
 ```
@@ -148,7 +147,7 @@ data/_baseline/<candidate-label>/baseline_agent_result.json
 
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase0-before \
   --candidate-label phase1-after \
   --strict
@@ -158,7 +157,7 @@ data/_baseline/<candidate-label>/baseline_agent_result.json
 
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase0-before \
   --candidate-label phase1-after \
   --skip-refresh
@@ -168,7 +167,7 @@ data/_baseline/<candidate-label>/baseline_agent_result.json
 
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase0-before \
   --candidate-label phase1-after \
   --refresh-all
@@ -185,7 +184,7 @@ test/baseline_agent/agent.md
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
   --phase <phase-number> \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label <base-label> \
   --strict
 ```
@@ -204,7 +203,7 @@ docs/agent-modernization-migration-workflow.md
 
 ```bash
 .venv/bin/python scripts/collect_baseline.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --run-date phase0-before
 ```
 
@@ -224,7 +223,7 @@ sed -n '1,240p' data/_baseline/phase0-before/run_summary.json
 
 ```bash
 .venv/bin/python scripts/collect_baseline.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --run-date phase1-after
 ```
 
@@ -273,7 +272,7 @@ sed -n '1,240p' data/_baseline/phase0-before/run_summary.json
 data/_baseline/2026-05-01/run_summary.json
 ```
 
-当时 4 个默认标的的 fundamental / deduction / report 关键报告均存在，但 `1h` / `1d` / `1w` K 线相对 2026-05-01 已过期，因此状态为 `degraded`。这说明当前历史报告链路可作为行为参考，但若要做严格验收，应先刷新数据并重新跑完整分析。
+当时 3 个默认标的的 fundamental / deduction / report 关键报告均存在，但 `1h` / `1d` / `1w` K 线相对 2026-05-01 已过期，因此状态为 `degraded`。这说明当前历史报告链路可作为行为参考，但若要做严格验收，应先刷新数据并重新跑完整分析。
 
 ## 常用命令
 
@@ -281,7 +280,7 @@ data/_baseline/2026-05-01/run_summary.json
 
 ```bash
 .venv/bin/python scripts/verify_data_freshness.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --critical-only
 ```
 
@@ -301,7 +300,7 @@ data/_baseline/2026-05-01/run_summary.json
 
 ```bash
 .venv/bin/python scripts/pipeline_state.py create \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --run-id <label>
 ```
 

@@ -29,14 +29,13 @@
 NVDA.US
 0700.HK
 600900.SH
-600036.SH
 ```
 
 ## 自动化入口
 
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase0-before \
   --candidate-label phase1-after
 ```

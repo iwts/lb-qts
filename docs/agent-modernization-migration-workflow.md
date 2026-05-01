@@ -26,7 +26,6 @@ test/baseline_agent/
 NVDA.US
 0700.HK
 600900.SH
-600036.SH
 ```
 
 除非某阶段明确只影响单一市场，否则不要缩小标的池。新增市场/品类能力时，可以追加标的，但不能删除默认标的。
@@ -59,7 +58,7 @@ phase2-after-r2
 
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --candidate-label phase0-before \
   --skip-compare \
   --strict
@@ -79,7 +78,7 @@ phase2-after-r2
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
   --phase <phase-number> \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label <base-label> \
   --strict
 ```
@@ -89,7 +88,7 @@ phase2-after-r2
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
   --phase 1 \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase0-before \
   --strict
 ```
@@ -106,7 +105,7 @@ Phase 2 结束后通常对比 Phase 1 稳定结果：
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
   --phase 2 \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase1-after \
   --strict
 ```
@@ -156,7 +155,7 @@ conclusion: PASS|DEGRADED|FAIL
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
   --phase 3 \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase2-after \
   --refresh-all \
   --strict
@@ -167,7 +166,7 @@ conclusion: PASS|DEGRADED|FAIL
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
   --phase 3 \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase2-after \
   --skip-refresh
 ```
@@ -176,7 +175,7 @@ conclusion: PASS|DEGRADED|FAIL
 
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label phase2-after \
   --candidate-label phase3-after-r2 \
   --strict

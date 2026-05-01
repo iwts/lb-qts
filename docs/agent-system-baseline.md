@@ -16,7 +16,6 @@ Phase 0 的目标是冻结当前三阶段投研系统的可比较基线。后续
 NVDA.US
 0700.HK
 600900.SH
-600036.SH
 ```
 
 覆盖目的：
@@ -26,7 +25,6 @@ NVDA.US
 | `NVDA.US` | 高成长科技 | 成长、估值、财报预期、波动率 |
 | `0700.HK` | 港股互联网 | 港股流动性、估值折价、政策风险 |
 | `600900.SH` | 红利/防御 | 分红现金流、防御型判断 |
-| `600036.SH` | 金融/银行 | 净息差、资产质量、估值约束 |
 
 ## 基线采集命令
 
@@ -39,7 +37,7 @@ NVDA.US
 采集指定标的：
 
 ```bash
-.venv/bin/python scripts/collect_baseline.py --symbols NVDA.US,0700.HK,600900.SH,600036.SH
+.venv/bin/python scripts/collect_baseline.py --symbols NVDA.US,0700.HK,600900.SH
 ```
 
 严格模式用于 CI 或人工验收，任一标的不是 `ok` 时返回非零退出码：
@@ -61,8 +59,11 @@ data/_baseline/<yyyy-mm-dd>/<symbol>_baseline_metrics.json
 
 - 采集日期；
 - 回归标的列表；
+- 状态计数与采集耗时；
 - 每个标的状态；
+- 每个标的推断阶段状态；
 - fundamental / deduction / final report 最新产物路径；
+- 报告长度；
 - warning 列表；
 - 每个标的 metrics 文件路径。
 
@@ -73,7 +74,26 @@ data/_baseline/<yyyy-mm-dd>/<symbol>_baseline_metrics.json
 - `1h` / `1d` / `1w` 数据新鲜度；
 - 最近一次 `data/_runs/*/run_manifest.json` 中该标的阶段状态；
 - 最新 worker result JSON metrics（如存在）；
+- 推断阶段状态、报告长度、采集耗时；
 - 缺失或过期原因。
+
+## 当前 Phase 0 基线
+
+当前可验收基线：
+
+```text
+data/_baseline/2026-05-01/run_summary.json
+```
+
+状态：
+
+```text
+ok: 3
+degraded: 0
+failed: 0
+```
+
+三个默认回归标的 `NVDA.US`、`0700.HK`、`600900.SH` 均通过关键数据门禁，并具备 `fundamental_analysis`、`deduction`、`report` 三类关键产物。
 
 ## 质量地板
 

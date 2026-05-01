@@ -85,7 +85,6 @@ scripts/record_prediction.py
 NVDA.US
 0700.HK
 600900.SH
-600036.SH
 ```
 
 ## 基线执行流程
@@ -111,7 +110,6 @@ market_main_agent
 - 输出文件路径；
 - worker JSON metrics；
 - 报告长度；
-- 飞书同步状态；
 - 运行耗时。
 
 ## 建议新增产物
@@ -125,14 +123,14 @@ data/_baseline/<date>/<symbol>_baseline_metrics.json
 当前实现入口：
 
 ```bash
-.venv/bin/python scripts/collect_baseline.py --symbols NVDA.US,0700.HK,600900.SH,600036.SH --run-date <yyyy-mm-dd>
+.venv/bin/python scripts/collect_baseline.py --symbols NVDA.US,0700.HK,600900.SH --run-date <yyyy-mm-dd>
 ```
 
 推荐自动化入口（独立 test agent，不进入正式投研流水线）：
 
 ```bash
 .venv/bin/python test/baseline_agent/run.py \
-  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --symbols NVDA.US,0700.HK,600900.SH \
   --base-label <base-label> \
   --candidate-label <candidate-label>
 ```
@@ -151,7 +149,7 @@ data/_baseline/<date>/<symbol>_baseline_metrics.json
 ```json
 {
   "run_date": "2026-05-01",
-  "symbols": ["NVDA.US", "0700.HK", "600900.SH", "600036.SH"],
+  "symbols": ["NVDA.US", "0700.HK", "600900.SH"],
   "results": [
     {
       "symbol": "NVDA.US",
