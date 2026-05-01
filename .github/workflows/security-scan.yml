@@ -1,0 +1,75 @@
+name: Security Scan
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sensitive-information-scan:
+    name: Sensitive information scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify scripts syntax
+        run: |
+          python -m py_compile scripts/*.py
+          bash -n scripts/sync_feishu_docs.sh
+
+      - name: Verify ignored/local-only paths are not Git candidates
+        run: |
+          set -euo pipefail
+          candidates="$(git ls-files --cached --others --exclude-standard)"
+          printf '%s\n' "$candidates" | grep -E '^(\.config/|\.venv/|\.local-tools/|tmp/|data/|deduction/|report/|chat-report/|task/)' && {
+            echo 'Ignored/local-only path is present in Git candidate scope.' >&2
+            exit 1
+          } || true
+
+      - name: Scan Git candidate files for secrets and personal information
+        run: python scripts/security_scan_git_candidates.py
+
+      - name: Verify CLI/status outputs do not expose Wiki identifiers
+        run: |
+          python - <<'PY'
+          import json
+          import subprocess
+
+          forbidden_terms = [
+              'youtube_root_node_token',
+              'youtube_space_id',
+              'root_node_token',
+              'space_id',
+              'node_token',
+              'doc_token',
+              'processed_page_ids',
+              'page_id',
+          ]
+
+          for action in ['status', 'list-pending', 'show-log']:
+              out = subprocess.check_output(
+                  ['python', 'scripts/sync_youtube_insights.py', '--action', action],
+                  text=True,
+              )
+              data = json.loads(out)
+              text = json.dumps(data, ensure_ascii=False)
+              hits = [term for term in forbidden_terms if term in text]
+              if hits:
+                  raise SystemExit(f'{action} output contains forbidden terms: {hits}')
+
+          print('CLI/status output check passed.')
+          PY
