@@ -163,6 +163,10 @@ Phase 1 不要求所有字段都有真实逻辑，但字段要先稳定下来。
 - worker JSON 包含 `skills_used` 和 `profile_used` 字段；
 - 原有三阶段仍能跑通；
 - 关键产物路径保持兼容。
+- 必须运行 baseline agent 并得到 `PASS`，报告写入 `data/_baseline/phase1-after/baseline_agent_report.md`：
+```bash
+.venv/bin/python test/baseline_agent/run.py --phase 1 --base-label phase0-before --strict
+```
 
 ## 风险与控制
 
@@ -198,9 +202,9 @@ Phase 1 结束后，Phase 2 agent 应读取：
 
 ```text
 docs/agent-modernization-phase-1-worker-slimming.md
+data/_baseline/phase1-after/baseline_agent_report.md
 agents/workers/*.md
 agents/policies/trading_playbook.md
 ```
 
 并开始把临时 skill 草稿整理成稳定方法库。
-

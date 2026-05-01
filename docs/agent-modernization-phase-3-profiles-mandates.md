@@ -284,6 +284,10 @@ worker 输出：
 - 同一 worker 在不同 profile 下能体现权重差异；
 - profile 不重复通用方法论；
 - profile 不覆盖全局 rules。
+- 必须运行 baseline agent 并得到 `PASS`，报告写入 `data/_baseline/phase3-after/baseline_agent_report.md`：
+```bash
+.venv/bin/python test/baseline_agent/run.py --phase 3 --base-label phase2-after --strict
+```
 
 ## 风险与控制
 
@@ -309,9 +313,9 @@ Phase 3 结束后，Phase 4 agent 应读取：
 
 ```text
 docs/agent-modernization-phase-3-profiles-mandates.md
+data/_baseline/phase3-after/baseline_agent_report.md
 agents/profiles/*.md
 agents/skills/*.md
 ```
 
 然后建设 typed artifacts 和 validator，让 profile 影响结果可以被结构化记录。
-

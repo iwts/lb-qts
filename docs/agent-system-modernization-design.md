@@ -26,6 +26,22 @@
 
 建议按顺序推进。每个 Phase 都可以独立开新 agent 执行、调试和验收。
 
+统一迁移流程与每阶段基准测试门禁见：
+
+```text
+docs/agent-modernization-migration-workflow.md
+```
+
+硬性要求：Phase 1-7 每个阶段完成后，必须运行独立 baseline agent，并把报告路径写入阶段交接记录。
+
+```bash
+.venv/bin/python test/baseline_agent/run.py \
+  --phase <phase-number> \
+  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --base-label <base-label> \
+  --strict
+```
+
 | Phase | 文档 | 目标 |
 | --- | --- | --- |
 | Phase 0 | [agent-modernization-phase-0-baseline.md](agent-modernization-phase-0-baseline.md) | 冻结当前行为基线，建立回归标的和质量标准 |
@@ -127,4 +143,3 @@ hk_liquidity_pm.md
 ```text
 deduction/<symbol>/pm_decision_<yyyy_mm_dd>_<seq>.json
 ```
-

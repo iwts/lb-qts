@@ -193,6 +193,10 @@ review 产生的是 candidate，只有升级为 active learned rule 后才影响
 - review 能评价 PM，而不只评价报告文风；
 - 不同 profile 下的 PM 行为明显差异化；
 - 主 agent 不再承担观点责任。
+- 必须运行 baseline agent 并得到 `PASS`，报告写入 `data/_baseline/phase7-after/baseline_agent_report.md`：
+```bash
+.venv/bin/python test/baseline_agent/run.py --phase 7 --base-label phase6-after --strict
+```
 
 ## 长期演进
 
@@ -259,4 +263,3 @@ Review:
 - 风控约束由 rules / validator 管；
 - 观点责任由 PM agent 承担；
 - 进化由 review agent 承担。
-

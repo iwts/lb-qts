@@ -122,6 +122,30 @@ data/_baseline/<date>/run_summary.json
 data/_baseline/<date>/<symbol>_baseline_metrics.json
 ```
 
+当前实现入口：
+
+```bash
+.venv/bin/python scripts/collect_baseline.py --symbols NVDA.US,0700.HK,600900.SH,600036.SH --run-date <yyyy-mm-dd>
+```
+
+推荐自动化入口（独立 test agent，不进入正式投研流水线）：
+
+```bash
+.venv/bin/python test/baseline_agent/run.py \
+  --symbols NVDA.US,0700.HK,600900.SH,600036.SH \
+  --base-label <base-label> \
+  --candidate-label <candidate-label>
+```
+
+严格验收模式：
+
+```bash
+.venv/bin/python test/baseline_agent/run.py \
+  --base-label <base-label> \
+  --candidate-label <candidate-label> \
+  --strict
+```
+
 `run_summary.json` 示例：
 
 ```json
@@ -172,4 +196,3 @@ data/_baseline/<date>/run_summary.json
 ```
 
 然后开始瘦身 worker prompt。
-

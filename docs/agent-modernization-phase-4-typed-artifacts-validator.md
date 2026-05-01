@@ -255,6 +255,10 @@ Phase 4 后，主 agent 不再主要阅读 deduction Markdown，而是：
 - Markdown 缺失时直接 failed；
 - 主流程可以只凭 JSON 判断阶段状态；
 - review agent 可以读取 `pm_decision.json` 做后验统计。
+- 必须运行 baseline agent 并得到 `PASS`，报告写入 `data/_baseline/phase4-after/baseline_agent_report.md`：
+```bash
+.venv/bin/python test/baseline_agent/run.py --phase 4 --base-label phase3-after --strict
+```
 
 ## 风险与控制
 
@@ -281,10 +285,10 @@ Phase 4 结束后，Phase 5 agent 应读取：
 
 ```text
 docs/agent-modernization-phase-4-typed-artifacts-validator.md
+data/_baseline/phase4-after/baseline_agent_report.md
 data/<symbol>/analysis_packet.json
 deduction/<symbol>/*_view_*.json
 deduction/<symbol>/pm_decision_*.json
 ```
 
 然后把流程组织成显式 DAG 和冲突处理机制。
-

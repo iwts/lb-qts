@@ -260,6 +260,10 @@ worker JSON 回传：
 - worker prompt 不再重复完整方法论；
 - skills 不直接绑定单个 worker；
 - skills 有明确输入、方法、输出字段和降级条件。
+- 必须运行 baseline agent 并得到 `PASS`，报告写入 `data/_baseline/phase2-after/baseline_agent_report.md`：
+```bash
+.venv/bin/python test/baseline_agent/run.py --phase 2 --base-label phase1-after --strict
+```
 
 ## 风险与控制
 
@@ -285,9 +289,9 @@ Phase 2 结束后，Phase 3 agent 应读取：
 
 ```text
 docs/agent-modernization-phase-2-skills-library.md
+data/_baseline/phase2-after/baseline_agent_report.md
 agents/skills/*.md
 agents/workers/*.md
 ```
 
 然后建立 profiles / mandates，让同一 worker 在不同标的上体现不同投资风格。
-

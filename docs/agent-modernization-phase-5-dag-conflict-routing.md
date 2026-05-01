@@ -188,6 +188,10 @@ validator 直接 failed。
 - `pm_decision.json` 有结构化 conflicts 字段；
 - Level 4 硬冲突能被 validator 阻断；
 - 主 agent 不靠口头总结判断流程完成。
+- 必须运行 baseline agent 并得到 `PASS`，报告写入 `data/_baseline/phase5-after/baseline_agent_report.md`：
+```bash
+.venv/bin/python test/baseline_agent/run.py --phase 5 --base-label phase4-after --strict
+```
 
 ## 风险与控制
 
@@ -213,6 +217,7 @@ Phase 5 结束后，Phase 6 agent 应读取：
 
 ```text
 docs/agent-modernization-phase-5-dag-conflict-routing.md
+data/_baseline/phase5-after/baseline_agent_report.md
 data/_runs/<run_id>/run_manifest.json
 deduction/<symbol>/pm_decision_*.json
 report/<symbol>/execution_summary_*.json
@@ -220,4 +225,3 @@ data/performance/predictions.csv
 ```
 
 然后建设后验 review 与规则进化机制。
-

@@ -1,4 +1,5 @@
 import csv
+import json
 import sys
 import tempfile
 import unittest
@@ -11,6 +12,8 @@ if str(SCRIPTS_DIR) not in sys.path:
 from pipeline_state import create_run_manifest, load_manifest, update_phase
 from validate_worker_result import validate_worker_result
 from record_prediction import append_prediction, prediction_from_execution_summary
+from collect_baseline import collect_baseline
+from compare_baseline import compare_baselines
 
 
 class PipelineStateTests(unittest.TestCase):
@@ -158,6 +161,98 @@ class PredictionRecordTests(unittest.TestCase):
         self.assertEqual(prediction["symbol"], "AAPL.US")
         self.assertEqual(prediction["entry"], "190.5")
         self.assertEqual(prediction["rules_applied"], "4.1;4.2")
+
+
+class BaselineCollectionTests(unittest.TestCase):
+    def test_collect_baseline_writes_summary_and_symbol_metrics(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            symbol = "AAPL.US"
+            data_dir = root / "data" / symbol
+            deduction_dir = root / "deduction" / symbol
+            report_dir = root / "report" / symbol
+            data_dir.mkdir(parents=True)
+            deduction_dir.mkdir(parents=True)
+            report_dir.mkdir(parents=True)
+
+            for name in ("1h_k.csv", "1d_k.csv", "1w_k.csv"):
+                (data_dir / name).write_text(
+                    "timestamp,open,high,low,close,volume\n"
+                    "2026-05-01T01:00:00Z,1,2,1,2,100\n",
+                    encoding="utf-8",
+                )
+            for name in ("fundamental.json", "earnings.json", "signals_summary.json", "factor_scores.json"):
+                (data_dir / name).write_text("{}", encoding="utf-8")
+            (data_dir / "llm_context.md").write_text("# Context\n", encoding="utf-8")
+            (deduction_dir / "fundamental_analysis_2026_05_01.md").write_text("# Fundamental\n", encoding="utf-8")
+            (deduction_dir / "deduction_2026_05_01_01.md").write_text("# Deduction\n", encoding="utf-8")
+            (report_dir / "report_2026_05_01_01.md").write_text("# Report\n", encoding="utf-8")
+
+            summary = collect_baseline(symbols=[symbol], run_date="2026-05-01", project_root=root)
+
+            summary_path = root / "data" / "_baseline" / "2026-05-01" / "run_summary.json"
+            metrics_path = root / "data" / "_baseline" / "2026-05-01" / f"{symbol}_baseline_metrics.json"
+            self.assertTrue(summary_path.exists())
+            self.assertTrue(metrics_path.exists())
+            self.assertEqual(summary["results"][0]["symbol"], symbol)
+            self.assertEqual(summary["results"][0]["final_report"], "report/AAPL.US/report_2026_05_01_01.md")
+
+            metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+            self.assertEqual(metrics["artifacts"]["deduction_report"]["line_count"], 1)
+            self.assertIn(metrics["status"], {"ok", "degraded"})
+
+    def test_collect_baseline_marks_missing_key_artifact_failed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            summary = collect_baseline(symbols=["MISSING.US"], run_date="2026-05-01", project_root=root)
+
+            self.assertEqual(summary["results"][0]["status"], "failed")
+            self.assertIn("missing key artifact: final_report", summary["results"][0]["warnings"])
+
+
+class BaselineComparisonTests(unittest.TestCase):
+    def test_compare_baselines_detects_status_regression(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_baseline_summary(root, "before", [{"symbol": "AAPL.US", "status": "ok"}])
+            write_baseline_summary(root, "after", [{"symbol": "AAPL.US", "status": "failed"}])
+
+            report = compare_baselines(base_label="before", candidate_label="after", project_root=root)
+
+            self.assertEqual(report["status"], "failed")
+            self.assertEqual(report["regressions"][0]["type"], "status_worse")
+
+    def test_compare_baselines_tracks_improvement(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_baseline_summary(root, "before", [{"symbol": "AAPL.US", "status": "degraded"}])
+            write_baseline_summary(root, "after", [{"symbol": "AAPL.US", "status": "ok"}])
+
+            report = compare_baselines(base_label="before", candidate_label="after", project_root=root)
+
+            self.assertEqual(report["status"], "ok")
+            self.assertEqual(report["improvements"][0]["type"], "status_better")
+
+
+def write_baseline_summary(root: Path, label: str, results: list[dict]):
+    baseline_dir = root / "data" / "_baseline" / label
+    baseline_dir.mkdir(parents=True)
+    normalized = []
+    for result in results:
+        normalized.append(
+            {
+                "symbol": result["symbol"],
+                "status": result["status"],
+                "fundamental_report": result.get("fundamental_report", "deduction/AAPL.US/fundamental.md"),
+                "deduction_report": result.get("deduction_report", "deduction/AAPL.US/deduction.md"),
+                "final_report": result.get("final_report", "report/AAPL.US/report.md"),
+                "warnings": result.get("warnings", []),
+            }
+        )
+    (baseline_dir / "run_summary.json").write_text(
+        json.dumps({"run_date": label, "symbols": [r["symbol"] for r in normalized], "results": normalized}),
+        encoding="utf-8",
+    )
 
 
 if __name__ == "__main__":

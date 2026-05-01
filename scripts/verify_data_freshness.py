@@ -13,7 +13,9 @@
     1 = FAIL (存在过期标的)
 """
 import argparse
+import json
 import os
+import subprocess
 import sys
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
@@ -30,11 +32,13 @@ PERIOD_CONFIG = {
 }
 
 MARKET_CONFIG = {
-    ".US": {"tz": "America/New_York", "open_hour": 9, "close_hour": 16},
-    ".HK": {"tz": "Asia/Hong_Kong", "open_hour": 9, "close_hour": 16},
-    ".SH": {"tz": "Asia/Shanghai", "open_hour": 9, "close_hour": 15},
-    ".SZ": {"tz": "Asia/Shanghai", "open_hour": 9, "close_hour": 15},
+    ".US": {"tz": "America/New_York", "open_hour": 9, "close_hour": 16, "calendar": "US"},
+    ".HK": {"tz": "Asia/Hong_Kong", "open_hour": 9, "close_hour": 16, "calendar": "HK"},
+    ".SH": {"tz": "Asia/Shanghai", "open_hour": 9, "close_hour": 15, "calendar": "CN"},
+    ".SZ": {"tz": "Asia/Shanghai", "open_hour": 9, "close_hour": 15, "calendar": "CN"},
 }
+
+_TRADING_DAYS_CACHE: dict[tuple[str, str, str], set[date]] = {}
 
 
 def parse_symbols_from_file(filepath: str) -> list[str]:
@@ -88,17 +92,83 @@ def _prev_trading_day(d: date) -> date:
     return cur
 
 
+def _trading_days(calendar: str, start: date, end: date) -> set[date] | None:
+    key = (calendar, start.isoformat(), end.isoformat())
+    if key in _TRADING_DAYS_CACHE:
+        return _TRADING_DAYS_CACHE[key]
+    try:
+        result = subprocess.run(
+            [
+                "longbridge",
+                "trading",
+                "days",
+                calendar,
+                "--start",
+                start.isoformat(),
+                "--end",
+                end.isoformat(),
+                "--format",
+                "json",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    try:
+        payload = json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+    days = {date.fromisoformat(item) for item in payload.get("trading_days", [])}
+    _TRADING_DAYS_CACHE[key] = days
+    return days
+
+
+def _prev_calendar_trading_day(calendar: str, d: date) -> date | None:
+    start = d - timedelta(days=21)
+    days = _trading_days(calendar, start, d)
+    if not days:
+        return None
+    previous = [item for item in days if item < d]
+    return max(previous) if previous else None
+
+
+def _latest_calendar_trading_day(calendar: str, d: date) -> date | None:
+    start = d - timedelta(days=21)
+    days = _trading_days(calendar, start, d)
+    if not days:
+        return None
+    latest = [item for item in days if item <= d]
+    return max(latest) if latest else None
+
+
 def _expected_latest_date(symbol: str, period: str, now_utc: datetime) -> date | None:
     if period not in {"1h", "1d"}:
         return None
     meta = _market_meta(symbol)
     local_now = now_utc.astimezone(ZoneInfo(meta["tz"]))
     current_date = local_now.date()
-    if current_date.weekday() >= 5:
-        return _prev_trading_day(current_date)
+    calendar = meta.get("calendar")
+    if calendar:
+        latest_trading_day = _latest_calendar_trading_day(calendar, current_date)
+        if latest_trading_day and latest_trading_day < current_date:
+            return latest_trading_day
     if period == "1d" and local_now.hour < meta["close_hour"] + 1:
+        if calendar:
+            previous = _prev_calendar_trading_day(calendar, current_date)
+            if previous:
+                return previous
         return _prev_trading_day(current_date)
     if period == "1h" and local_now.hour < meta["open_hour"]:
+        if calendar:
+            previous = _prev_calendar_trading_day(calendar, current_date)
+            if previous:
+                return previous
+        return _prev_trading_day(current_date)
+    if current_date.weekday() >= 5:
         return _prev_trading_day(current_date)
     return current_date
 

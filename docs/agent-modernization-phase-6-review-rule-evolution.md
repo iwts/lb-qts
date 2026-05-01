@@ -172,6 +172,10 @@ Review agent 不做：
 - learned_rules 不再无限膨胀；
 - 每条新增规则有案例来源；
 - 错误归因能反向影响 skills/profile/rules。
+- 必须运行 baseline agent 并得到 `PASS`，报告写入 `data/_baseline/phase6-after/baseline_agent_report.md`：
+```bash
+.venv/bin/python test/baseline_agent/run.py --phase 6 --base-label phase5-after --strict
+```
 
 ## 风险与控制
 
@@ -198,10 +202,10 @@ Phase 6 结束后，Phase 7 agent 应读取：
 
 ```text
 docs/agent-modernization-phase-6-review-rule-evolution.md
+data/_baseline/phase6-after/baseline_agent_report.md
 agents/rule_candidates.md
 agents/learned_rules.md
 deduction/<symbol>/review_*.json
 ```
 
 然后建设 PM 责任制、risk officer 和公司化运行模型。
-
