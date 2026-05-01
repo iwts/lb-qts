@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-解析盘口深度和逐笔成交 MCP 数据，生成订单流分析。
+解析盘口深度和逐笔成交数据，生成订单流分析。
 
-数据来源：LongPort MCP 的 depth 和 trades 工具返回的 JSON。
-由 Orchestrator / Data Agent 在 MCP 调用后将 JSON 保存到临时文件，再调用本脚本解析。
+数据来源：Longbridge 官方行情路径返回的 depth 和 trades JSON。
+由 Orchestrator / Data Agent 将 JSON 保存到临时文件，再调用本脚本解析。
 
 用法：
   .venv/bin/python scripts/parse_orderflow.py --symbol 0700.HK \

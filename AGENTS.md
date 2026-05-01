@@ -125,11 +125,13 @@ lb-qts/
 ## 数据来源与工具链
 
 ```
-行情数据: user-longport-mcp (candlesticks/quote/capital_flow/capital_distribution)
+行情数据: Longbridge hosted MCP + longbridge CLI adapter
+    │
+    ├─→ [fetch_longbridge_data.py] → data/<标的>/tmp/*_mcp.json
     │
     ├─→ [parse_mcp_data.py] → data/<标的>/*.csv (增量合并+前复权漂移检测)
     │
-期权数据: user-longport-mcp (option_chain_list/option_chain_info/quote)  [仅美股]
+期权数据: Longbridge hosted MCP (option_quote/option_volume/option_volume_daily) + longbridge CLI option  [仅美股]
     │
     ▼
   [parse_option_data.py] → data/<标的>/option_oi.csv + option_summary.json
@@ -160,7 +162,8 @@ lb-qts/
 | 脚本 | 功能 |
 |------|------|
 | `check_data_freshness.py` | 检查 K 线新鲜度，输出增量拉取建议（count + status） |
-| `parse_mcp_data.py` | MCP JSON → CSV 增量合并 + 前复权漂移检测 |
+| `fetch_longbridge_data.py` | Longbridge CLI → parser 兼容 JSON（K线/报价/资金流/资金分布/市场温度） |
+| `parse_mcp_data.py` | Longbridge JSON → CSV 增量合并 + 前复权漂移检测 |
 | `fetch_fundamental.py` | Yahoo Finance 基本面/财报拉取（1 天缓存） |
 | `calc_indicators.py` | 技术指标计算 + 交易信号检测 |
 | `extract_llm_context.py` | 从 CSV 提取 LLM 精简上下文（~7K tokens） |
@@ -192,5 +195,6 @@ cd <PROJECT_ROOT>
 ```
 
 ### MCP 工具
-- **`user-longport-mcp`**：长桥行情 MCP，提供 K 线、报价、资金流、期权链等实时数据（含 option_chain_list / option_chain_info）
+- **`longbridge` hosted MCP**：官方 OAuth MCP，配置为 `https://openapi.longbridge.com/mcp`，优先用于已暴露的报价、期权、持仓等工具。
+- **`longbridge` CLI**：官方 OAuth CLI，用于 hosted MCP 当前未暴露的 K 线、资金流、资金分布、市场温度等核心行情数据；通过 `scripts/fetch_longbridge_data.py` 统一落盘为 parser 兼容 JSON。
 - **`@larksuite/cli`（lark-cli）**：飞书 CLI，用于 Wiki/Docs 读写同步与 YouTube 博主内容读取

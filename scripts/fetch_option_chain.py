@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """
-解析期权链 MCP 数据，计算关键期权指标。
+解析期权链数据，计算关键期权指标。
 
-数据来源：LongPort MCP 的 option_chain_list, option_chain_info, quote 工具。
-由 Data Agent 按以下步骤调用 MCP 后，将结果保存为 JSON 再调用本脚本。
+数据来源：Longbridge 官方行情路径（hosted MCP 已暴露的 option_quote /
+option_volume，或 longbridge CLI 的 option chain / option quote）。
+由 Data Agent 先将期权链和报价结果保存为 JSON，再调用本脚本。
 
-MCP 调用流程：
-  1. option_chain_list(symbol) → 获取到期日列表
-  2. option_chain_info(symbol, expiry_date=最近2个到期日) → 获取行权价和 call/put symbol
-  3. quote(symbols=[接近平值的 call/put symbols]) → 获取 last_done, volume 等
+调用流程：
+  1. 获取到期日列表
+  2. 获取最近 2 个到期日的行权价和 call/put symbol
+  3. 获取接近平值的 call/put symbols 的 last_done, volume 等报价字段
 
 用法：
   .venv/bin/python scripts/fetch_option_chain.py --symbol NVDA.US \

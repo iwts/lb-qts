@@ -11,11 +11,12 @@
 
 ## 工具
 
-- `candlesticks(symbol, period, count, forward_adjust=true, trade_sessions=all)`
-- `quote(symbols)`
-- `capital_flow(symbol)`
-- `capital_distribution(symbol)`
-- `current_market_temperature(market)`
+- 优先使用已加载的官方 Longbridge hosted MCP（`mcp__longbridge__`）获取其已暴露的数据，例如 `quote`、`option_quote`、`option_volume`、`stock_positions`。
+- hosted MCP 未暴露的核心行情数据，通过本地已登录的 `longbridge` CLI 获取，并统一走 `scripts/fetch_longbridge_data.py`：
+  - K 线：`longbridge kline <symbol> --period <period> --count <count> --adjust forward --session all --format json`
+  - 资金流：`longbridge capital <symbol> --flow --format json`
+  - 资金分布：`longbridge capital <symbol> --format json`
+  - 市场温度：`longbridge market-temp --format json`
 
 ## 执行
 
@@ -23,26 +24,29 @@
 ```bash
 .venv/bin/python scripts/check_data_freshness.py --symbol <symbol> --periods 1h,1d,1w
 ```
-2. 对 `stale/missing` 周期调用 `candlesticks`，写入 `data/<symbol>/tmp/*_mcp.json`。
+2. 对 `stale/missing` 周期调用 Longbridge 数据适配脚本，写入 `data/<symbol>/tmp/*_mcp.json`：
+```bash
+.venv/bin/python scripts/fetch_longbridge_data.py --symbol <symbol> --periods 1h,1d,1w --count <count> --fetch kline,quote,capital_flow,capital_distribution,market_temperature
+```
 3. 合并：
 ```bash
 .venv/bin/python scripts/parse_mcp_data.py --symbol <symbol> --hourly ... --daily ... --weekly ...
 ```
 4. 若 `parse_mcp_data.py` 返回 exit code 2：全周期 `count=1000` 重拉并重合并。
-5. 拉取并解析 `capital_flow/capital_distribution/quote`。
+5. 拉取并解析 `capital_flow/capital_distribution/quote`。若 hosted MCP 能直接返回等价数据，可使用 MCP；否则使用 `scripts/fetch_longbridge_data.py` 生成兼容 JSON。
 6. 每批只拉一次三市场温度并写入各标的目录。
 7. 执行：
 ```bash
 .venv/bin/python scripts/calc_factors.py --symbol <symbol>
 ```
 8. 校验关键文件非空，清理 `tmp`。
-9. 禁止使用 yfinance 或其他非 LongPort 行情源替代 `candlesticks` / `quote` / `capital_flow` / `capital_distribution` / `current_market_temperature`。
+9. 禁止使用 yfinance 或其他非 Longbridge 官方路径替代 K 线 / 报价 / 资金流 / 资金分布 / 市场温度。允许的官方路径仅限 hosted MCP、`longbridge` CLI、Longbridge SDK。
 
 ## 门禁
 
 - 必须输出每周期 freshness 状态。
-- `stale` 周期必须有对应 MCP 调用记录。
-- LongPort 核心调用重试后仍失败时，立即返回 `failed`，不得写入替代行情数据。
+- `stale` 周期必须有对应 Longbridge MCP/CLI 调用记录。
+- Longbridge 核心调用重试后仍失败时，立即返回 `failed`，不得写入替代行情数据。
 - 关键文件缺失返回 `failed`。
 
 ## 产物

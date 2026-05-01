@@ -20,10 +20,11 @@
 ## 输入
 
 1. `deduction/<symbol>/deduction_*.md` 最近 2–3 份（历史预测）
-2. `data/<symbol>/1d_indicators.csv` / `1h_indicators.csv`（真实走势）
-3. `data/<symbol>/signals_summary.json`（最新状态）
-4. `data/youtube_insights/challenges.md`（外部观点，可选）
-5. `agents/learned_rules.md`
+2. `data/performance/predictions.csv`（若存在，优先用于结构化预测回溯）
+3. `data/<symbol>/1d_indicators.csv` / `1h_indicators.csv`（真实走势）
+4. `data/<symbol>/signals_summary.json`（最新状态）
+5. `data/youtube_insights/challenges.md`（外部观点，可选）
+6. `agents/learned_rules.md`
 
 ## 复盘七步方法论
 

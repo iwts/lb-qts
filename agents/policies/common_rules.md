@@ -11,11 +11,11 @@
 
 ## 文件系统纪律
 
-1. 禁止在项目根目录创建新目录或新文件（`data/`、`deduction/`、`report/` 及其子目录除外）。
-2. 禁止创建新的 Python 脚本。
+1. 运行时不得在项目根目录创建新目录或新文件；运行产物统一落在 `data/`、`deduction/`、`report/` 及其子目录。
+2. 运行时不得临时创建新的 Python 脚本；工程化能力应复用已入库的 `scripts/*.py`。
 3. 禁止创建 staging/cache/payload 目录。
 4. 禁止拆分 Markdown 为 chunk 文件。
-5. 禁止创建 JSON payload 中间文件。
+5. 禁止创建 JSON payload 中间文件；唯一例外是结构化运行状态与校验产物：`data/_runs/<run_id>/`、`data/performance/`。
 
 ## MCP 临时文件规范
 
