@@ -11,13 +11,13 @@
 
 1. 优先读取精简上下文文件，避免直接读取大体积原始 CSV。
 2. 单 Agent 只加载完成任务所需最小文件集。
-3. 当输入缺失时，先尝试按既有脚本补齐；涉及行情/报价/资金流/市场温度的核心市场数据时，仅允许使用 LongPort 路径补齐，重试后仍失败则直接返回 `failed`。
+3. 当输入缺失时，先尝试按既有脚本补齐；涉及行情/报价/资金流/市场温度的核心市场数据时，仅允许使用 Longbridge 官方路径补齐，重试后仍失败则直接返回 `failed`。官方路径包括 hosted MCP（`mcp__longbridge__`）、`longbridge` CLI、Longbridge SDK。
 
 ## 执行策略
 
 1. 先做可验证的数据准备，再做推理与写入。
 2. 写入本地文件后必须做存在性与非空校验。
-3. 可重试错误必须重试；LongPort 核心调用重试后仍失败时，当前标的直接 `failed`，不得切换到其他行情源继续执行。
+3. 可重试错误必须重试；Longbridge 核心调用重试后仍失败时，当前标的直接 `failed`，不得切换到其他行情源继续执行。
 4. 当基础流程与 `learned_rules` 冲突时，以 `learned_rules` 为准。
 5. 若主任务定义包含阶段二/三产物，则在这些产物未落盘前，不得把任务视为完成。
 6. “口头总结”“终端输出”“数据已刷新”都不能替代必需的 Markdown 产物。
@@ -81,7 +81,7 @@
 1. 单任务失败不阻塞同批其他任务。
 2. 关键文件不存在时必须返回 `failed`。
 3. 非关键子步骤失败时返回 `degraded` 并记录 `warnings`。
-4. LongPort `candlesticks` / `quote` / `capital_flow` / `capital_distribution` / `current_market_temperature` 任一失败且重试后仍未恢复，属于关键失败。
+4. Longbridge K 线 / 报价 / 资金流 / 资金分布 / 市场温度任一失败且重试后仍未恢复，属于关键失败。hosted MCP 未暴露的接口应通过 `scripts/fetch_longbridge_data.py` 调用 `longbridge` CLI 补齐，不得切换到非 Longbridge 行情源。
 
 ## 编排约束
 

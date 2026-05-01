@@ -79,7 +79,7 @@
 .venv/bin/python scripts/verify_data_freshness.py --symbols <comma_symbols> --critical-only
 ```
 5. FAIL 仅补拉失败标的，最多 2 轮。
-6. 若 LongPort 核心数据调用在重试后仍失败，该标的立即标记 `failed`，中断后续阶段，并明确告知用户“无法通过 LongPort 获取数据”。
+6. 若 Longbridge 核心数据调用在重试后仍失败，该标的立即标记 `failed`，中断后续阶段，并明确告知用户“无法通过 Longbridge 获取数据”。
 7. 记录数据质量摘要。
 8. 阶段一结束后**不得直接输出最终结论**；必须继续进入阶段二，除非遇到真实阻塞。
 
