@@ -4,6 +4,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
 if str(SCRIPTS_DIR) not in sys.path:
@@ -63,6 +64,9 @@ class WorkerResultValidationTests(unittest.TestCase):
             "status": "ok",
             "phase": "reasoning",
             "output_files": [],
+            "skills_used": ["agents/skills/long_short_thesis.md"],
+            "skills_skipped": [],
+            "profile_used": "default",
             "summary": "test",
             "metrics": {
                 "direction": "long",
@@ -70,6 +74,7 @@ class WorkerResultValidationTests(unittest.TestCase):
                 "best_rr": 1.2,
                 "numeric_evidence_count": 6,
                 "rules_applied_count": 1,
+                "rules_applied_ids": ["4.1"],
             },
             "warnings": [],
         }
@@ -88,6 +93,9 @@ class WorkerResultValidationTests(unittest.TestCase):
                 "status": "ok",
                 "phase": "execution",
                 "output_files": ["report/AAPL.US/report.md"],
+                "skills_used": ["agents/skills/execution_risk_check.md"],
+                "skills_skipped": [],
+                "profile_used": "default",
                 "summary": "test",
                 "metrics": {
                     "direction": "long",
@@ -95,10 +103,28 @@ class WorkerResultValidationTests(unittest.TestCase):
                     "plans_passed_risk_check": 2,
                     "plans_total": 2,
                     "rules_applied_count": 1,
+                    "rules_applied_ids": ["4.1"],
                 },
                 "warnings": [],
             }
             self.assertEqual(validate_worker_result(result, project_root=root, check_files=True), [])
+
+    def test_phase1_core_worker_result_requires_skill_and_rule_fields(self):
+        result = {
+            "symbol": "AAPL.US",
+            "status": "ok",
+            "phase": "strategy",
+            "output_files": [],
+            "summary": "test",
+            "metrics": {},
+            "warnings": [],
+        }
+        errors = validate_worker_result(result, project_root=Path.cwd(), check_files=False)
+        self.assertIn("skills_used must be a list", errors)
+        self.assertIn("skills_skipped must be a list", errors)
+        self.assertIn("profile_used must be a non-empty string", errors)
+        self.assertIn("strategy.rules_applied_count is required", errors)
+        self.assertIn("strategy.rules_applied_ids is required", errors)
 
 
 class PredictionRecordTests(unittest.TestCase):
@@ -211,6 +237,46 @@ class BaselineCollectionTests(unittest.TestCase):
 
             self.assertEqual(summary["results"][0]["status"], "failed")
             self.assertIn("missing key artifact: final_report", summary["results"][0]["warnings"])
+
+    def test_collect_baseline_ignores_noncritical_freshness_warnings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            symbol = "AAPL.US"
+            data_dir = root / "data" / symbol
+            deduction_dir = root / "deduction" / symbol
+            report_dir = root / "report" / symbol
+            data_dir.mkdir(parents=True)
+            deduction_dir.mkdir(parents=True)
+            report_dir.mkdir(parents=True)
+
+            for name in ("1h_k.csv", "1d_k.csv", "1w_k.csv"):
+                (data_dir / name).write_text(
+                    "timestamp,open,high,low,close,volume\n"
+                    "2026-05-01T01:00:00Z,1,2,1,2,100\n",
+                    encoding="utf-8",
+                )
+            for name in ("fundamental.json", "earnings.json", "signals_summary.json", "factor_scores.json"):
+                (data_dir / name).write_text("{}", encoding="utf-8")
+            (data_dir / "llm_context.md").write_text("# Context\n", encoding="utf-8")
+            (deduction_dir / "fundamental_analysis_2026_05_01.md").write_text("# Fundamental\n", encoding="utf-8")
+            (deduction_dir / "deduction_2026_05_01_01.md").write_text("# Deduction\n", encoding="utf-8")
+            (report_dir / "report_2026_05_01_01.md").write_text("# Report\n", encoding="utf-8")
+
+            freshness = {
+                "symbol": symbol,
+                "pass": False,
+                "critical_pass": True,
+                "periods": {
+                    "1h": {"status": "OK", "latest": "2026-05-01", "hours_ago": 1, "critical": True},
+                    "1d": {"status": "OK", "latest": "2026-05-01", "hours_ago": 1, "critical": True},
+                    "1w": {"status": "STALE", "latest": "2026-04-26", "hours_ago": 210, "critical": False},
+                },
+            }
+            with patch("collect_baseline.check_symbol", return_value=freshness):
+                summary = collect_baseline(symbols=[symbol], run_date="2026-05-01", project_root=root)
+
+            self.assertEqual(summary["results"][0]["status"], "ok")
+            self.assertEqual(summary["results"][0]["warnings"], [])
 
 
 class BaselineComparisonTests(unittest.TestCase):

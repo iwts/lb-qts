@@ -62,13 +62,17 @@
   "phase": "data|fundamental|strategy|reasoning|execution|review|youtube",
   "output_files": ["<path>"],
   "line_count": 0,
+  "skills_used": [],
+  "skills_skipped": [],
+  "profile_used": "default",
   "summary": "一句话结果",
   "metrics": {},
   "warnings": []
 }
 ```
 
-- `metrics` 应包含规则执行信息（至少 `rules_applied_count`，可选 `rules_applied_ids`）。
+- Phase 1 核心 worker（fundamental / strategy / reasoning / execution / review）必须返回 `skills_used`、`skills_skipped`、`profile_used`。
+- `metrics` 应包含规则执行信息：`rules_applied_count` 与 `rules_applied_ids`。
 - 若规则缺失或未应用导致结论不可信，应返回 `degraded`。
 - 推理/执行阶段建议补充：
   - `trade_plans_count`

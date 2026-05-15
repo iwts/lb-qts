@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 REQUIRED_TOP_LEVEL = {"symbol", "status", "phase", "output_files", "summary", "metrics", "warnings"}
+PHASE1_CORE_PHASES = {"fundamental", "strategy", "reasoning", "execution", "review"}
 ALLOWED_STATUS = {"ok", "degraded", "failed"}
 ALLOWED_PHASE = {"data", "fundamental", "strategy", "reasoning", "execution", "review", "youtube"}
 ALLOWED_DIRECTION = {"long", "short", "neutral", ""}
@@ -42,6 +43,8 @@ def validate_worker_result(
         errors.append("warnings must be a list")
     if not isinstance(result.get("metrics"), dict):
         errors.append("metrics must be an object")
+    if phase in PHASE1_CORE_PHASES:
+        errors.extend(_validate_phase1_contract(result, metrics))
 
     if check_files and isinstance(result.get("output_files"), list):
         errors.extend(_validate_output_files(root, result["output_files"]))
@@ -53,6 +56,25 @@ def validate_worker_result(
         if check_files and isinstance(result.get("output_files"), list):
             errors.extend(_validate_execution_report_content(root, result["output_files"]))
 
+    return errors
+
+
+def _validate_phase1_contract(result: dict[str, Any], metrics: dict[str, Any]) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(result.get("skills_used"), list):
+        errors.append("skills_used must be a list")
+    elif not result["skills_used"]:
+        errors.append("skills_used must not be empty for Phase 1 core workers")
+    if not isinstance(result.get("skills_skipped"), list):
+        errors.append("skills_skipped must be a list")
+    if not isinstance(result.get("profile_used"), str) or not result.get("profile_used").strip():
+        errors.append("profile_used must be a non-empty string")
+    if "rules_applied_count" not in metrics:
+        errors.append(f"{result.get('phase')}.rules_applied_count is required")
+    if "rules_applied_ids" not in metrics:
+        errors.append(f"{result.get('phase')}.rules_applied_ids is required")
+    elif not isinstance(metrics.get("rules_applied_ids"), list):
+        errors.append(f"{result.get('phase')}.rules_applied_ids must be a list")
     return errors
 
 
@@ -90,8 +112,6 @@ def _validate_reasoning(metrics: dict[str, Any]) -> list[str]:
             errors.append("reasoning.best_rr must be >= 1.5 for non-neutral direction")
     if _number(metrics, "numeric_evidence_count") < 6:
         errors.append("reasoning.numeric_evidence_count must be >= 6")
-    if "rules_applied_count" not in metrics:
-        errors.append("reasoning.rules_applied_count is required")
     return errors
 
 
@@ -112,8 +132,6 @@ def _validate_execution(metrics: dict[str, Any]) -> list[str]:
     for key in ("feishu_report", "feishu_deduction", "feishu_fundamental"):
         if key in metrics and metrics[key] not in {"ok", "failed", "skipped"}:
             errors.append(f"execution.{key} must be ok|failed|skipped")
-    if "rules_applied_count" not in metrics:
-        errors.append("execution.rules_applied_count is required")
     return errors
 
 

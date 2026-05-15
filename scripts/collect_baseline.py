@@ -277,8 +277,8 @@ def build_warnings(
             warnings.append(f"missing data file: {filename}")
     for period, info in freshness["periods"].items():
         if info["status"] != "OK":
-            tag = "critical" if info["critical"] else "non-critical"
-            warnings.append(f"{tag} data freshness {period}: {info['status']}")
+            if info["critical"]:
+                warnings.append(f"critical data freshness {period}: {info['status']}")
     return warnings
 
 
