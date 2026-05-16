@@ -1,0 +1,209 @@
+{
+  "generated_at": "2026-05-16T22:51:12+08:00",
+  "base_label": "phase2-after",
+  "candidate_label": "phase3-after",
+  "conclusion": "PASS",
+  "reasons": [],
+  "pre_data_gate": {
+    "name": "verify_data_freshness",
+    "command": [
+      "/Users/dongbei.li/VSCodeWorkSpace/量化/lb-qts/.venv/bin/python",
+      "/Users/dongbei.li/VSCodeWorkSpace/量化/lb-qts/scripts/verify_data_freshness.py",
+      "--symbols",
+      "NVDA.US,0700.HK,600900.SH",
+      "--critical-only"
+    ],
+    "returncode": 0,
+    "duration_seconds": 4.5,
+    "stdout_tail": "============================================================\n数据门禁校验结果\n阈值：{'1h': '4h', '1d': '24h', '1w': '192h'} [仅关键数据]\n============================================================\n总标的数：3\n通过：3\n未通过：0\n\n✅ PASS — 所有标的数据均为最新",
+    "stderr_tail": ""
+  },
+  "refresh_targets": [],
+  "symbols": [
+    {
+      "symbol": "NVDA.US",
+      "status": "ok",
+      "warnings": [
+        "data already fresh; refresh skipped"
+      ],
+      "commands": [],
+      "refreshed": false,
+      "refresh_mode": "none"
+    },
+    {
+      "symbol": "0700.HK",
+      "status": "ok",
+      "warnings": [
+        "data already fresh; refresh skipped"
+      ],
+      "commands": [],
+      "refreshed": false,
+      "refresh_mode": "none"
+    },
+    {
+      "symbol": "600900.SH",
+      "status": "ok",
+      "warnings": [
+        "data already fresh; refresh skipped"
+      ],
+      "commands": [],
+      "refreshed": false,
+      "refresh_mode": "none"
+    }
+  ],
+  "data_gate": {
+    "name": "verify_data_freshness",
+    "command": [
+      "/Users/dongbei.li/VSCodeWorkSpace/量化/lb-qts/.venv/bin/python",
+      "/Users/dongbei.li/VSCodeWorkSpace/量化/lb-qts/scripts/verify_data_freshness.py",
+      "--symbols",
+      "NVDA.US,0700.HK,600900.SH",
+      "--critical-only"
+    ],
+    "returncode": 0,
+    "duration_seconds": 3.28,
+    "stdout_tail": "============================================================\n数据门禁校验结果\n阈值：{'1h': '4h', '1d': '24h', '1w': '192h'} [仅关键数据]\n============================================================\n总标的数：3\n通过：3\n未通过：0\n\n✅ PASS — 所有标的数据均为最新",
+    "stderr_tail": ""
+  },
+  "collect_baseline": {
+    "name": "collect_baseline",
+    "command": [
+      "/Users/dongbei.li/VSCodeWorkSpace/量化/lb-qts/.venv/bin/python",
+      "/Users/dongbei.li/VSCodeWorkSpace/量化/lb-qts/scripts/collect_baseline.py",
+      "--symbols",
+      "NVDA.US,0700.HK,600900.SH",
+      "--run-date",
+      "phase3-after",
+      "--json"
+    ],
+    "returncode": 0,
+    "duration_seconds": 3.37,
+    "stdout_tail": "tion/NVDA.US/deduction_2026_05_16_01.md\",\n      \"final_report\": \"report/NVDA.US/report_2026_04_19_01.md\",\n      \"report_length\": {\n        \"line_count\": 106,\n        \"size_bytes\": 3036\n      },\n      \"warnings\": [],\n      \"metrics_file\": \"data/_baseline/phase3-after/NVDA.US_baseline_metrics.json\"\n    },\n    {\n      \"symbol\": \"0700.HK\",\n      \"status\": \"ok\",\n      \"stage_status\": {\n        \"data\": \"ok\",\n        \"fundamental\": \"ok\",\n        \"strategy\": \"ok\",\n        \"reasoning\": \"ok\",\n        \"execution\": \"ok\"\n      },\n      \"fundamental_report\": \"deduction/0700.HK/fundamental_analysis_2026_04_19_01.md\",\n      \"deduction_report\": \"deduction/0700.HK/deduction_2026_04_19_01.md\",\n      \"final_report\": \"report/0700.HK/report_2026_04_19_01.md\",\n      \"report_length\": {\n        \"line_count\": 106,\n        \"size_bytes\": 3025\n      },\n      \"warnings\": [],\n      \"metrics_file\": \"data/_baseline/phase3-after/0700.HK_baseline_metrics.json\"\n    },\n    {\n      \"symbol\": \"600900.SH\",\n      \"status\": \"ok\",\n      \"stage_status\": {\n        \"data\": \"ok\",\n        \"fundamental\": \"ok\",\n        \"strategy\": \"ok\",\n        \"reasoning\": \"ok\",\n        \"execution\": \"ok\"\n      },\n      \"fundamental_report\": \"deduction/600900.SH/fundamental_analysis_2026_02_26.md\",\n      \"deduction_report\": \"deduction/600900.SH/deduction_2026_05_16_01.md\",\n      \"final_report\": \"report/600900.SH/report_2026_03_24_01.md\",\n      \"report_length\": {\n        \"line_count\": 80,\n        \"size_bytes\": 5375\n      },\n      \"warnings\": [],\n      \"metrics_file\": \"data/_baseline/phase3-after/600900.SH_baseline_metrics.json\"\n    }\n  ],\n  \"status_counts\": {\n    \"ok\": 3,\n    \"degraded\": 0,\n    \"failed\": 0\n  },\n  \"duration_seconds\": 3.0,\n  \"quality_floor\": {\n    \"required_artifacts\": [\n      \"deduction/<symbol>/fundamental_analysis_*.md\",\n      \"deduction/<symbol>/deduction_*.md\",\n      \"report/<symbol>/report_*.md\"\n    ],\n    \"critical_data_periods\": [\n      \"1h\",\n      \"1d\"\n    ],\n    \"degraded_is_allowed_for_baseline\": true\n  }\n}",
+    "stderr_tail": ""
+  },
+  "compare_baseline": {
+    "name": "compare_baseline",
+    "command": [
+      "/Users/dongbei.li/VSCodeWorkSpace/量化/lb-qts/.venv/bin/python",
+      "/Users/dongbei.li/VSCodeWorkSpace/量化/lb-qts/scripts/compare_baseline.py",
+      "--base",
+      "phase2-after",
+      "--candidate",
+      "phase3-after",
+      "--symbols",
+      "NVDA.US,0700.HK,600900.SH",
+      "--json"
+    ],
+    "returncode": 0,
+    "duration_seconds": 0.05,
+    "stdout_tail": "{\n  \"base_label\": \"phase2-after\",\n  \"candidate_label\": \"phase3-after\",\n  \"symbols\": [\n    \"NVDA.US\",\n    \"0700.HK\",\n    \"600900.SH\"\n  ],\n  \"status\": \"ok\",\n  \"regressions\": [],\n  \"improvements\": [],\n  \"unchanged\": [\n    \"NVDA.US\",\n    \"0700.HK\",\n    \"600900.SH\"\n  ],\n  \"missing_symbols\": []\n}",
+    "stderr_tail": ""
+  },
+  "baseline_summary": {
+    "run_date": "phase3-after",
+    "generated_at": "2026-05-16T22:51:11+08:00",
+    "symbols": [
+      "NVDA.US",
+      "0700.HK",
+      "600900.SH"
+    ],
+    "results": [
+      {
+        "symbol": "NVDA.US",
+        "status": "ok",
+        "stage_status": {
+          "data": "ok",
+          "fundamental": "ok",
+          "strategy": "ok",
+          "reasoning": "ok",
+          "execution": "ok"
+        },
+        "fundamental_report": "deduction/NVDA.US/fundamental_analysis_2026_04_19_01.md",
+        "deduction_report": "deduction/NVDA.US/deduction_2026_05_16_01.md",
+        "final_report": "report/NVDA.US/report_2026_04_19_01.md",
+        "report_length": {
+          "line_count": 106,
+          "size_bytes": 3036
+        },
+        "warnings": [],
+        "metrics_file": "data/_baseline/phase3-after/NVDA.US_baseline_metrics.json"
+      },
+      {
+        "symbol": "0700.HK",
+        "status": "ok",
+        "stage_status": {
+          "data": "ok",
+          "fundamental": "ok",
+          "strategy": "ok",
+          "reasoning": "ok",
+          "execution": "ok"
+        },
+        "fundamental_report": "deduction/0700.HK/fundamental_analysis_2026_04_19_01.md",
+        "deduction_report": "deduction/0700.HK/deduction_2026_04_19_01.md",
+        "final_report": "report/0700.HK/report_2026_04_19_01.md",
+        "report_length": {
+          "line_count": 106,
+          "size_bytes": 3025
+        },
+        "warnings": [],
+        "metrics_file": "data/_baseline/phase3-after/0700.HK_baseline_metrics.json"
+      },
+      {
+        "symbol": "600900.SH",
+        "status": "ok",
+        "stage_status": {
+          "data": "ok",
+          "fundamental": "ok",
+          "strategy": "ok",
+          "reasoning": "ok",
+          "execution": "ok"
+        },
+        "fundamental_report": "deduction/600900.SH/fundamental_analysis_2026_02_26.md",
+        "deduction_report": "deduction/600900.SH/deduction_2026_05_16_01.md",
+        "final_report": "report/600900.SH/report_2026_03_24_01.md",
+        "report_length": {
+          "line_count": 80,
+          "size_bytes": 5375
+        },
+        "warnings": [],
+        "metrics_file": "data/_baseline/phase3-after/600900.SH_baseline_metrics.json"
+      }
+    ],
+    "status_counts": {
+      "ok": 3,
+      "degraded": 0,
+      "failed": 0
+    },
+    "duration_seconds": 3.0,
+    "quality_floor": {
+      "required_artifacts": [
+        "deduction/<symbol>/fundamental_analysis_*.md",
+        "deduction/<symbol>/deduction_*.md",
+        "report/<symbol>/report_*.md"
+      ],
+      "critical_data_periods": [
+        "1h",
+        "1d"
+      ],
+      "degraded_is_allowed_for_baseline": true
+    }
+  },
+  "compare_report": {
+    "base_label": "phase2-after",
+    "candidate_label": "phase3-after",
+    "symbols": [
+      "NVDA.US",
+      "0700.HK",
+      "600900.SH"
+    ],
+    "status": "ok",
+    "regressions": [],
+    "improvements": [],
+    "unchanged": [
+      "NVDA.US",
+      "0700.HK",
+      "600900.SH"
+    ],
+    "missing_symbols": []
+  }
+}

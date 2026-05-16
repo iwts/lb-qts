@@ -1,0 +1,10 @@
+{
+  "symbol": "600900.SH",
+  "market": "CN",
+  "asset_type": "equity",
+  "sector": "utility",
+  "style_profile": "dividend_defensive_pm",
+  "optional_profiles": [],
+  "profile_source": "manual",
+  "profile_confidence": 0.9
+}

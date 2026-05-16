@@ -65,6 +65,15 @@
   "skills_used": [],
   "skills_skipped": [],
   "profile_used": "default",
+  "optional_profiles": [],
+  "profile_source": "manual|rule|default",
+  "profile_file_paths": [],
+  "profile_effect": {
+    "weight_bias_applied": {},
+    "hard_concerns_triggered": [],
+    "preferred_setups_considered": [],
+    "profile_not_applicable_risk": "low|medium|high"
+  },
   "summary": "一句话结果",
   "metrics": {},
   "warnings": []
@@ -72,6 +81,10 @@
 ```
 
 - Phase 1 核心 worker（fundamental / strategy / reasoning / execution / review）必须返回 `skills_used`、`skills_skipped`、`profile_used`。
+- Phase 3 profile-aware worker（reasoning / execution）必须返回 `optional_profiles`、`profile_source`、`profile_file_paths`、`profile_effect`，并实际读取 `profile_file_paths`。
+- `profile_effect.weight_bias_applied` 必须描述证据权重变化；若没有变化，必须提供 `profile_effect.no_weight_difference_reason`。
+- `profile_effect.profile_not_applicable_risk` 为 `medium|high` 时，当前 worker 至少 `degraded`。
+- profile-aware worker 的 Markdown 产物必须包含 Profile 段，说明权重影响与 hard concerns。
 - `metrics` 应包含规则执行信息：`rules_applied_count` 与 `rules_applied_ids`。
 - 若规则缺失或未应用导致结论不可信，应返回 `degraded`。
 - 推理/执行阶段建议补充：

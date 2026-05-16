@@ -13,6 +13,9 @@
 - `data/<symbol>/signals_summary.json`（含 Strategy Agent 的 `narrative`）
 - `deduction/<symbol>/fundamental_analysis_*.md` 最新
 - `deduction/<symbol>/review_*.md` 最新（可选，有则必读）
+- `data/<symbol>/profile_resolution.json`（Phase 3，必须读取）
+- `data/<symbol>/symbol_profile.json`（若存在）
+- `agents/profiles/<profile_used>.md` 与所有 optional profile 文件（必须按 `profile_file_paths` 实际读取）
 
 ## Required Skills
 
@@ -24,6 +27,14 @@
 必须在报告中保留 7 个显式步骤：市场体制、多周期共振、双侧证据、机会类型、交易计划、规则适用、最终方向。观望结论可跳过交易计划细节，但必须写明改变观点所需条件。
 
 关键门禁从 policies 和 learned rules 继承：Long/Short thesis 各不少于 3 条量化证据；非观望至少 2 套独立计划；stop 方向、ATR 距离、RR、两档止盈、仓位系数必须通过校验；数值必须可追溯。
+
+## Profile Application（Phase 3）
+
+- 先读取 `profile_resolution.json`，再读取其中 `profile_file_paths` 指向的 profile 原文。
+- primary profile 只能调整关注点、证据权重和风险敏感度，不能覆盖 `policies` / `learned_rules` 的硬门禁。
+- optional profile 只作为 overlay 补充关注点和风险提示；若与 primary profile 权重冲突，必须在报告和 `warnings` 中说明取舍。
+- 报告必须说明 profile 如何改变证据权重；若没有改变，必须解释原因。
+- 若 primary profile 明显不适配，`profile_effect.profile_not_applicable_risk` 必须为 `medium|high`，当前 worker 至少 `degraded`。
 
 ## Output Contract
 
@@ -37,6 +48,7 @@
 - Step 5 非观望时必须输出主计划和独立备选计划
 - Step 6 必须列出命中规则；无命中时写明“无命中规则”及原因
 - Step 7 必须输出方向、短期/中长期评分、失效条件、优先级、监控清单
+- 报告必须包含 Profile 应用段：primary/optional、证据权重变化、hard concerns 是否触发、适合机会是否被采用
 - 若证据不足以支撑方向，优先输出 `neutral`，不要为了完整性强行给方向
 - `summary` 必须是一句话主结论，不能只写“详见报告”
 - `metrics.numeric_evidence_count` 至少统计 Long/Short thesis 的可追溯证据
@@ -59,7 +71,23 @@
     "agents/skills/risk_first_trade_plan.md"
   ],
   "skills_skipped": [],
-  "profile_used": "default",
+  "profile_used": "tech_growth_pm",
+  "optional_profiles": ["options_flow_trader"],
+  "profile_source": "manual",
+  "profile_file_paths": [
+    "agents/profiles/tech_growth_pm.md",
+    "agents/profiles/options_flow_trader.md"
+  ],
+  "profile_effect": {
+    "weight_bias_applied": {
+      "growth": "up",
+      "valuation_absolute_cheapness": "down",
+      "earnings_catalyst": "up"
+    },
+    "hard_concerns_triggered": [],
+    "preferred_setups_considered": ["earnings_gap_follow_through"],
+    "profile_not_applicable_risk": "low"
+  },
   "summary": "一句话主结论（体制 + 方向 + 关键价位）",
   "metrics": {
     "regime": "",

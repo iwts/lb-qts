@@ -12,6 +12,7 @@
 3. `agents/policies/trading_playbook.md` ← 所有分析类 worker 的方法论来源
 4. `agents/policies/report_specs.md`
 5. `agents/learned_rules.md`（位阶最高）
+6. Phase 3 profile resolution：`data/<symbol>/profile_resolution.json` 指向的 `agents/profiles/*.md`
 
 ## Workers
 
@@ -91,6 +92,26 @@
 2. `agents/policies/trading_playbook.md` 存在且非空 —— 缺失时全局标记 `degraded`。
 3. 每个标的的 `data/<symbol>/llm_context.md` 与 `signals_summary.json` 齐全。
 
+### 阶段一.6：Profile 解析与校验（Phase 3）
+
+1. 先运行全局 profile 校验：
+```bash
+.venv/bin/python scripts/validate_profiles.py
+```
+2. 对每个标的生成稳定解析产物：
+```bash
+.venv/bin/python scripts/resolve_profile.py --symbol <symbol> --write
+```
+默认退出码中 `ok` 与 `degraded` 都表示命令完成，主 Agent 必须读取 JSON 的 `status` 判定是否降级；只有 JSON 非法等输入错误返回失败。若需要 shell 级硬门禁，可追加 `--strict`。
+3. 解析产物固定为 `data/<symbol>/profile_resolution.json`，主 Agent 调度阶段二/三时必须传入其中字段：
+   - `profile_used`
+   - `optional_profiles`
+   - `profile_file_paths`
+   - `profile_source`
+   - `profile_warnings`
+4. `profile_used` 为 `default`、profile 文件缺失、或 resolver 返回 `degraded` 时，该标的至少标记 `degraded`，但若核心数据和报告门禁仍满足，可以继续完成后续阶段。
+5. 若 `symbol_profile.json` 存在但 JSON 非法，当前标的标记 `failed`，不得静默回落到默认 profile。
+
 ### 阶段一.75：技术面分析（Strategy narrative 预生成，可选但推荐）
 
 对每个标的按需调度 `strategy_agent`：
@@ -103,6 +124,10 @@
 - 固定 `1标的=1Agent`。
 - 每批最多并行 4。
 - 输入白名单：
+  - `data/<symbol>/symbol_profile.json`（若存在）
+  - `data/<symbol>/profile_resolution.json`
+  - `agents/profiles/<profile_used>.md`
+  - `agents/profiles/<optional_profile>.md`（若存在）
   - `data/<symbol>/llm_context.md`
   - `data/<symbol>/signals_summary.json`（含 narrative）
   - `deduction/<symbol>/fundamental_analysis_*.md` 最新
@@ -111,18 +136,24 @@
   - `deduction/<symbol>/review_*.md` 最新（可选）
 - 阶段二结束后，若 Markdown 文件尚未实际写入 `deduction/<symbol>/`，视为阶段二未完成。
 - Reasoning Agent 必须完成"六步决策链"（见 `workers/reasoning_agent.md`），缺任一步直接 `failed` 或 `degraded`。
+- Reasoning Agent 必须实际读取 `profile_file_paths` 中的 profile 文件，并在 worker result 中输出 `profile_effect`。
 
 ### 阶段三：执行
 
 - 固定 `1标的=1Agent`。
 - 每批最多并行 4。
 - 输入白名单：
+  - `data/<symbol>/symbol_profile.json`（若存在）
+  - `data/<symbol>/profile_resolution.json`
+  - `agents/profiles/<profile_used>.md`
+  - `agents/profiles/<optional_profile>.md`（若存在）
   - `deduction/<symbol>/deduction_*.md` 最新
   - `deduction/<symbol>/fundamental_analysis_*.md` 最新
   - `data/<symbol>/signals_summary.json`
   - `.config/feishu_sync_config.json`
 - 阶段三结束后，若本地 `report/<symbol>/report_*.md` 不存在，则整个标的任务不能标记为完成。
 - 若飞书配置存在，则默认必须尝试同步；同步失败可降级，但不能跳过而不说明。
+- Execution Agent 必须继承 Reasoning Agent 的 `profile_used`，复核 hard concerns 对仓位和风险条款的影响，并在 worker result 中输出 `profile_effect`。
 
 ## 汇总
 

@@ -1,5 +1,6 @@
 import csv
 import json
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -7,14 +8,140 @@ from pathlib import Path
 from unittest.mock import patch
 
 SCRIPTS_DIR = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = SCRIPTS_DIR.parent
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
 from pipeline_state import create_run_manifest, load_manifest, update_phase
 from validate_worker_result import validate_worker_result
+from validate_profiles import validate_profiles
+from validate_phase3_profile_effect import validate_phase3_profile_effect
+from resolve_profile import resolve_profile
 from record_prediction import append_prediction, prediction_from_execution_summary
 from collect_baseline import collect_baseline
 from compare_baseline import compare_baselines
+
+
+def write_profile(path: Path, *, overlay: bool = False) -> None:
+    overlay_note = "作为 overlay profile 只补充关注点。\n\n" if overlay else ""
+    path.write_text(
+        "# Test Profile\n\n"
+        "## Mandate\n\n"
+        f"{overlay_note}测试 mandate。\n\n"
+        "## Evidence Priority\n\n"
+        "1. 测试证据。\n\n"
+        "## Weight Bias\n\n"
+        "成长权重上调。\n\n"
+        "## Hard Concerns\n\n"
+        "- 测试风险。\n\n"
+        "## Preferred Setups\n\n"
+        "- 测试机会。\n\n"
+        "## Common Mistakes\n\n"
+        "- 测试误判。\n",
+        encoding="utf-8",
+    )
+
+
+def write_symbol_profile(
+    root: Path,
+    symbol: str,
+    style_profile: str,
+    *,
+    optional_profiles: list[str] | None = None,
+) -> None:
+    symbol_dir = root / "data" / symbol
+    symbol_dir.mkdir(parents=True)
+    payload = {
+        "symbol": symbol,
+        "market": symbol.rsplit(".", 1)[-1],
+        "asset_type": "equity",
+        "sector": "test",
+        "style_profile": style_profile,
+        "optional_profiles": optional_profiles or [],
+        "profile_source": "manual",
+        "profile_confidence": 0.9,
+    }
+    (symbol_dir / "symbol_profile.json").write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+
+def profile_aware_reasoning_result(symbol: str, profile_used: str, weight_bias: dict[str, str]) -> dict:
+    return {
+        "symbol": symbol,
+        "status": "ok",
+        "phase": "reasoning",
+        "output_files": [],
+        "skills_used": ["agents/skills/long_short_thesis.md"],
+        "skills_skipped": [],
+        "profile_used": profile_used,
+        "optional_profiles": [],
+        "profile_source": "manual",
+        "profile_file_paths": [f"agents/profiles/{profile_used}.md"],
+        "profile_effect": {
+            "weight_bias_applied": weight_bias,
+            "hard_concerns_triggered": [],
+            "preferred_setups_considered": ["profile_specific_setup"],
+            "profile_not_applicable_risk": "low",
+        },
+        "summary": "test",
+        "metrics": {
+            "direction": "neutral",
+            "trade_plans_count": 0,
+            "best_rr": 0,
+            "numeric_evidence_count": 6,
+            "rules_applied_count": 1,
+            "rules_applied_ids": ["4.1"],
+        },
+        "warnings": [],
+    }
+
+
+def write_profile_effect_fixture(
+    root: Path,
+    *,
+    run_id: str,
+    symbol: str,
+    profile_used: str,
+    weight_bias: dict[str, str],
+) -> Path:
+    profile_dir = root / "agents" / "profiles"
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    write_profile(profile_dir / f"{profile_used}.md")
+
+    artifact = root / "deduction" / symbol / "deduction.md"
+    artifact.parent.mkdir(parents=True, exist_ok=True)
+    artifact.write_text(
+        "# Deduction\n\n"
+        "## Profile 应用\n\n"
+        f"- profile_used: {profile_used}\n"
+        "- profile 权重影响：已根据 mandate 调整证据权重。\n"
+        "- profile hard concerns: 未触发。\n",
+        encoding="utf-8",
+    )
+
+    result = profile_aware_reasoning_result(symbol, profile_used, weight_bias)
+    result["output_files"] = [f"deduction/{symbol}/deduction.md"]
+
+    symbol_dir = root / "data" / symbol
+    symbol_dir.mkdir(parents=True, exist_ok=True)
+    resolution = {
+        "symbol": symbol,
+        "status": "ok",
+        "profile_used": profile_used,
+        "optional_profiles": [],
+        "profile_file_paths": [f"agents/profiles/{profile_used}.md"],
+        "profile_source": "manual",
+        "profile_confidence": 0.9,
+        "profile_warnings": [],
+    }
+    (symbol_dir / "profile_resolution.json").write_text(
+        json.dumps(resolution, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    result_path = root / "data" / "_runs" / run_id / "worker_results" / f"{symbol}_reasoning.json"
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+    result_path.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
+    return result_path
 
 
 class PipelineStateTests(unittest.TestCase):
@@ -66,7 +193,16 @@ class WorkerResultValidationTests(unittest.TestCase):
             "output_files": [],
             "skills_used": ["agents/skills/long_short_thesis.md"],
             "skills_skipped": [],
-            "profile_used": "default",
+            "profile_used": "tech_growth_pm",
+            "optional_profiles": [],
+            "profile_source": "manual",
+            "profile_file_paths": ["agents/profiles/tech_growth_pm.md"],
+            "profile_effect": {
+                "weight_bias_applied": {"growth": "up"},
+                "hard_concerns_triggered": [],
+                "preferred_setups_considered": ["high_base_breakout"],
+                "profile_not_applicable_risk": "low",
+            },
             "summary": "test",
             "metrics": {
                 "direction": "long",
@@ -86,8 +222,19 @@ class WorkerResultValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             report = root / "report" / "AAPL.US" / "report.md"
+            profile = root / "agents" / "profiles" / "tech_growth_pm.md"
             report.parent.mkdir(parents=True)
-            report.write_text("# Report\n\n若 站上 190，则 买入；止损 180。\n", encoding="utf-8")
+            profile.parent.mkdir(parents=True)
+            report.write_text(
+                "# Report\n\n"
+                "若 站上 190，则 买入；止损 180。\n\n"
+                "## Profile 执行复核\n\n"
+                "- profile_used: tech_growth_pm\n"
+                "- profile 权重影响：成长权重上调。\n"
+                "- profile hard concerns: 未触发。\n",
+                encoding="utf-8",
+            )
+            profile.write_text("# Tech Growth PM\n", encoding="utf-8")
             result = {
                 "symbol": "AAPL.US",
                 "status": "ok",
@@ -95,7 +242,16 @@ class WorkerResultValidationTests(unittest.TestCase):
                 "output_files": ["report/AAPL.US/report.md"],
                 "skills_used": ["agents/skills/execution_risk_check.md"],
                 "skills_skipped": [],
-                "profile_used": "default",
+                "profile_used": "tech_growth_pm",
+                "optional_profiles": [],
+                "profile_source": "manual",
+                "profile_file_paths": ["agents/profiles/tech_growth_pm.md"],
+                "profile_effect": {
+                    "weight_bias_applied": {"growth": "up"},
+                    "hard_concerns_triggered": [],
+                    "preferred_setups_considered": ["high_base_breakout"],
+                    "profile_not_applicable_risk": "low",
+                },
                 "summary": "test",
                 "metrics": {
                     "direction": "long",
@@ -125,6 +281,230 @@ class WorkerResultValidationTests(unittest.TestCase):
         self.assertIn("profile_used must be a non-empty string", errors)
         self.assertIn("strategy.rules_applied_count is required", errors)
         self.assertIn("strategy.rules_applied_ids is required", errors)
+
+
+class ProfilePhase3Tests(unittest.TestCase):
+    def test_repository_phase3_assets_are_present_and_valid(self):
+        self.assertEqual(validate_profiles(project_root=PROJECT_ROOT), [])
+        expected = {
+            "NVDA.US": ("tech_growth_pm", ["options_flow_trader"]),
+            "0700.HK": ("hk_liquidity_pm", []),
+            "600900.SH": ("dividend_defensive_pm", []),
+        }
+        for symbol, (profile_used, optional_profiles) in expected.items():
+            resolution = resolve_profile(symbol, project_root=PROJECT_ROOT)
+            self.assertEqual(resolution["status"], "ok")
+            self.assertEqual(resolution["profile_used"], profile_used)
+            self.assertEqual(resolution["optional_profiles"], optional_profiles)
+            self.assertTrue(resolution["profile_file_paths"])
+
+    def test_validate_profiles_accepts_standard_phase3_fixture(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile_dir = root / "agents" / "profiles"
+            profile_dir.mkdir(parents=True)
+            for name in ("tech_growth_pm", "dividend_defensive_pm", "hk_liquidity_pm", "options_flow_trader"):
+                write_profile(profile_dir / f"{name}.md", overlay=name == "options_flow_trader")
+
+            write_symbol_profile(
+                root,
+                "NVDA.US",
+                "tech_growth_pm",
+                optional_profiles=["options_flow_trader"],
+            )
+            write_symbol_profile(root, "0700.HK", "hk_liquidity_pm")
+            write_symbol_profile(root, "600900.SH", "dividend_defensive_pm")
+
+            self.assertEqual(validate_profiles(project_root=root), [])
+
+    def test_resolve_profile_uses_manual_mapping_and_writes_profile_paths(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile_dir = root / "agents" / "profiles"
+            profile_dir.mkdir(parents=True)
+            write_profile(profile_dir / "tech_growth_pm.md")
+            write_profile(profile_dir / "options_flow_trader.md", overlay=True)
+            write_symbol_profile(
+                root,
+                "NVDA.US",
+                "tech_growth_pm",
+                optional_profiles=["options_flow_trader"],
+            )
+
+            resolution = resolve_profile("NVDA.US", project_root=root)
+
+            self.assertEqual(resolution["status"], "ok")
+            self.assertEqual(resolution["profile_used"], "tech_growth_pm")
+            self.assertEqual(resolution["profile_source"], "manual")
+            self.assertEqual(
+                resolution["profile_file_paths"],
+                ["agents/profiles/tech_growth_pm.md", "agents/profiles/options_flow_trader.md"],
+            )
+
+    def test_resolve_profile_cli_write_creates_resolution_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile_dir = root / "agents" / "profiles"
+            profile_dir.mkdir(parents=True)
+            write_profile(profile_dir / "tech_growth_pm.md")
+            write_symbol_profile(root, "NVDA.US", "tech_growth_pm")
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPTS_DIR / "resolve_profile.py"),
+                    "--symbol",
+                    "NVDA.US",
+                    "--project-root",
+                    str(root),
+                    "--write",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            output = json.loads(completed.stdout)
+            output_path = root / "data" / "NVDA.US" / "profile_resolution.json"
+            self.assertEqual(output["output_file"], "data/NVDA.US/profile_resolution.json")
+            self.assertTrue(output_path.exists())
+            self.assertEqual(json.loads(output_path.read_text(encoding="utf-8"))["profile_used"], "tech_growth_pm")
+
+    def test_resolve_profile_cli_allows_degraded_default_without_strict(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "agents" / "profiles").mkdir(parents=True)
+
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPTS_DIR / "resolve_profile.py"),
+                    "--symbol",
+                    "UNKNOWN.US",
+                    "--project-root",
+                    str(root),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            strict_completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPTS_DIR / "resolve_profile.py"),
+                    "--symbol",
+                    "UNKNOWN.US",
+                    "--project-root",
+                    str(root),
+                    "--strict",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            self.assertEqual(json.loads(completed.stdout)["status"], "degraded")
+            self.assertEqual(strict_completed.returncode, 2)
+
+    def test_resolve_profile_degrades_to_rule_when_symbol_profile_missing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile_dir = root / "agents" / "profiles"
+            profile_dir.mkdir(parents=True)
+            write_profile(profile_dir / "hk_liquidity_pm.md")
+
+            resolution = resolve_profile("0700.HK", project_root=root)
+
+            self.assertEqual(resolution["status"], "ok")
+            self.assertEqual(resolution["profile_used"], "hk_liquidity_pm")
+            self.assertEqual(resolution["profile_source"], "rule")
+            self.assertTrue(resolution["profile_warnings"])
+
+    def test_reasoning_worker_contract_allows_profile_specific_weight_bias(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            profile_dir = root / "agents" / "profiles"
+            profile_dir.mkdir(parents=True)
+            write_profile(profile_dir / "tech_growth_pm.md")
+            write_profile(profile_dir / "dividend_defensive_pm.md")
+
+            tech_result = profile_aware_reasoning_result(
+                "NVDA.US",
+                "tech_growth_pm",
+                {"growth": "up", "valuation_absolute_cheapness": "down"},
+            )
+            dividend_result = profile_aware_reasoning_result(
+                "600900.SH",
+                "dividend_defensive_pm",
+                {"cash_flow_quality": "up", "short_term_momentum": "down"},
+            )
+
+            self.assertEqual(validate_worker_result(tech_result, project_root=root, check_files=True), [])
+            self.assertEqual(validate_worker_result(dividend_result, project_root=root, check_files=True), [])
+            self.assertNotEqual(
+                tech_result["profile_effect"]["weight_bias_applied"],
+                dividend_result["profile_effect"]["weight_bias_applied"],
+            )
+
+    def test_phase3_profile_effect_validation_accepts_distinct_real_worker_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_profile_effect_fixture(
+                root,
+                run_id="phase3-proof",
+                symbol="NVDA.US",
+                profile_used="tech_growth_pm",
+                weight_bias={"growth": "up", "valuation_absolute_cheapness": "down"},
+            )
+            write_profile_effect_fixture(
+                root,
+                run_id="phase3-proof",
+                symbol="600900.SH",
+                profile_used="dividend_defensive_pm",
+                weight_bias={"cash_flow_quality": "up", "short_term_momentum": "down"},
+            )
+
+            report = validate_phase3_profile_effect(
+                project_root=root,
+                symbols=["NVDA.US", "600900.SH"],
+                phase="reasoning",
+                run_id="phase3-proof",
+            )
+
+            self.assertEqual(report["status"], "PASS", report["errors"])
+            self.assertEqual(report["profiles"], ["dividend_defensive_pm", "tech_growth_pm"])
+            self.assertEqual(report["distinct_weight_bias_count"], 2)
+
+    def test_phase3_profile_effect_validation_rejects_same_weight_bias(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            same_bias = {"growth": "up"}
+            write_profile_effect_fixture(
+                root,
+                run_id="phase3-proof",
+                symbol="NVDA.US",
+                profile_used="tech_growth_pm",
+                weight_bias=same_bias,
+            )
+            write_profile_effect_fixture(
+                root,
+                run_id="phase3-proof",
+                symbol="600900.SH",
+                profile_used="dividend_defensive_pm",
+                weight_bias=same_bias,
+            )
+
+            report = validate_phase3_profile_effect(
+                project_root=root,
+                symbols=["NVDA.US", "600900.SH"],
+                phase="reasoning",
+                run_id="phase3-proof",
+            )
+
+            self.assertEqual(report["status"], "FAIL")
+            self.assertIn("need at least 2 distinct weight_bias_applied payloads, got 1", report["errors"])
 
 
 class PredictionRecordTests(unittest.TestCase):

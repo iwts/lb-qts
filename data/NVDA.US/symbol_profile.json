@@ -1,0 +1,10 @@
+{
+  "symbol": "NVDA.US",
+  "market": "US",
+  "asset_type": "equity",
+  "sector": "semiconductor",
+  "style_profile": "tech_growth_pm",
+  "optional_profiles": ["options_flow_trader"],
+  "profile_source": "manual",
+  "profile_confidence": 0.9
+}

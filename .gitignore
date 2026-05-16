@@ -34,7 +34,23 @@ agents/feishu_sync_config.local.json
 
 # Runtime / temporary artifacts
 tmp/
-data/
+data/*
+!data/NVDA.US/
+data/NVDA.US/*
+!data/NVDA.US/symbol_profile.json
+!data/0700.HK/
+data/0700.HK/*
+!data/0700.HK/symbol_profile.json
+!data/600900.SH/
+data/600900.SH/*
+!data/600900.SH/symbol_profile.json
+!data/_baseline/
+data/_baseline/*
+!data/_baseline/phase3-after/
+data/_baseline/phase3-after/*
+!data/_baseline/phase3-after/baseline_agent_report.md
+!data/_baseline/phase3-after/baseline_agent_result.json
+!data/_baseline/phase3-after/run_summary.json
 deduction/
 chat-report/
 report/

@@ -1,0 +1,10 @@
+{
+  "symbol": "0700.HK",
+  "market": "HK",
+  "asset_type": "equity",
+  "sector": "internet",
+  "style_profile": "hk_liquidity_pm",
+  "optional_profiles": [],
+  "profile_source": "manual",
+  "profile_confidence": 0.9
+}

@@ -7,7 +7,8 @@
 3. 运行协议以 `agents/policies/runtime_contract.md` 为准。
 4. **交易分析方法论以 `agents/policies/trading_playbook.md` 为准——所有分析类 worker 必读。**
 5. 报告结构与评分映射以 `agents/policies/report_specs.md` 为准。
-6. 位阶顺序（冲突时由高到低）：`learned_rules.md` > `trading_playbook.md` > `report_specs.md` > 各 worker 自身描述。
+6. 位阶顺序（冲突时由高到低）：`learned_rules.md` > `trading_playbook.md` > `report_specs.md` > `agents/profiles/*.md` > 各 worker 自身描述。
+7. Profile 只能调整关注点、证据权重和风险敏感度，不得覆盖数据源、输出格式、风控门禁、评分等级或 worker JSON 协议。
 
 ## 文件系统纪律
 
